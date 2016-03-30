@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include"editdate.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -7,13 +8,16 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     this->dbf = "D:/data.db";
+    log = new Log(this);
     connectDB();
     initWidget();
     loadMoneyTree();
+    loadEventToLog();
 }
 
 MainWindow::~MainWindow(){
     closeDB();
+    delete log;
     delete ui;
 }
 
@@ -96,9 +100,9 @@ bool MainWindow::delItemMoneyDB(const QString &id){
 }
 
 /* Add event to Database */
-bool MainWindow::addEventDB(const QString & event){
+bool MainWindow::addEventDB(const QDateTime & datetime, const QString & event){
     this->dbs = "INSERT INTO " + this->usr + "_EVENT values ('" +
-            QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss") +
+            datetime.toString("yyyy-MM-dd HH:mm:ss") +
             "', '" + event + "');";
     if (this->qry->exec(this->dbs)){
         return true;
@@ -265,6 +269,18 @@ void MainWindow::updateMoneyTree(QTreeWidgetItem *item){
     }
 }
 
+/* Load Event to Log */
+void MainWindow::loadEventToLog(){
+    this->dbs = "SELECT * FROM " + this->usr + "_EVENT;";
+    log->clear();
+    if (this->qry->exec(this->dbs)){
+        while (qry->next()){
+            log->addEvent(qry->value(0).toString() + " | " + qry->value(1).toString());
+        }
+    }
+}
+
+
 /* On calendar click change */
 void MainWindow::onCalendarChange(){
     ui->date->setDate(ui->calendar->selectedDate());
@@ -281,10 +297,17 @@ void MainWindow::on_btnAdd_clicked(){
         date = ui->date->date();
         id = generateID();
         if (addMoneyDB(item,money,date,id)){
+            QDateTime curnentDateTime = QDateTime::currentDateTime();
             addItemMoneyTree(item,money,date,id);
-            addEventDB("Added: " + item + " $ "+ QString::number(money) +" $ " + date.toString("dd/MM/yyyy"));
+            addEventDB(curnentDateTime,"Added: " + item
+                       + " $ "+ QString::number(money)
+                       + " $ " + date.toString("dd/MM/yyyy"));
             ui->leItem->setText("");
             ui->spMoney->setValue(0);
+            log->addEvent(curnentDateTime.toString("yyyy-MM-dd hh:mm:ss")
+                          + " | Added: " + item
+                          + " $ " + QString::number(money)
+                          + " $ " + date.toString("dd/MM/yyyy"));
         }
         else {
             QMessageBox::critical(this,"ERROR","An Error occur, cannot add new item");
@@ -304,7 +327,14 @@ void MainWindow::on_btnDelete_clicked(){
         /* If it has parent Item */
         if (QMessageBox::question(this,"Delete Item","Are You Sure Want To Delete This Item '" + item->text(0) +"' ?") == QMessageBox::Yes){
             if (delItemMoneyDB(item->text(2))){
-                addEventDB("Deleted: " + item->text(0) + " $ " + item->text(1) + " $ " + item->parent()->text(0));
+                QDateTime currentDateTime = QDateTime::currentDateTime();
+                addEventDB(currentDateTime, "Deleted: " + item->text(0)
+                           + " $ " + item->text(1)
+                           + " $ " + item->parent()->text(0));
+                log->addEvent(currentDateTime.toString("yyyy-MM-dd hh:mm:ss")
+                              + "Deleted: " + item->text(0)
+                              + " $ " + item->text(1)
+                              + " $ " + item->parent()->text(0));
                 delete item;
                 if (parent->childCount() == 0){
                     delete parent;
@@ -319,15 +349,75 @@ void MainWindow::on_btnDelete_clicked(){
         /* if item is TopLevelItem */
         if (QMessageBox::question(this,"Delete Item","Are You Sure Want To Delete ALL Item in '"+ item->text(0) +"' ?") == QMessageBox::Yes){
             int childCount = item->childCount();
+            QDateTime currentDateTime;
             for (int i = 0; i < childCount; i++){
                 if (delItemMoneyDB(item->child(i)->text(2))){
-                    addEventDB("Deleted: " + item->child(i)->text(0) + " $ " + item->child(i)->text(1) + " $ " + item->text(0));
+                    currentDateTime = QDateTime::currentDateTime();
+                    addEventDB(currentDateTime, "Deleted: " + item->child(i)->text(0)
+                               + " $ " + item->child(i)->text(1)
+                               + " $ " + item->text(0));
+                    log->addEvent(currentDateTime.toString("yyyy-MM-dd hh:mm:ss")
+                                  + " | Deleted: " + item->child(i)->text(0)
+                                  + " $ " + item->child(i)->text(1)
+                                  + " $ " + item->text(0));
                 }
             }
             while (item->childCount()){
                 delete item->child(0);
             }
             delete item;
+        }
+    }
+}
+
+void MainWindow::on_btnLoadUser_clicked(){
+    this->usr = ui->cmUser->currentText();
+    loadMoneyTree();
+    loadEventToLog();
+}
+
+void MainWindow::on_btnSort_clicked(){
+
+}
+
+void MainWindow::on_btnLog_clicked(){
+    log->show();
+}
+
+void MainWindow::on_btnEdit_clicked(){
+    QTreeWidgetItem * item = ui->moneytree->currentItem();
+    if (item->parent()){
+
+    }
+    else {
+        QDate date = QDate::fromString(ui->moneytree->currentItem()->text(0),"dd/MM/yyyy");
+        EditDate editdate(this);
+        editdate.setValue(date);
+        editdate.exec();
+        if (editdate.change()){
+            QDate newdate = editdate.getValue();
+            this->dbs = "UPDATE " + this->usr +  "_money SET date = '" + newdate.toString("yyyy-MM-dd")
+                    + "' WHERE date = '" + date.toString("yyyy-MM-dd") + "';";
+            //qDebug() << this->dbs;
+            if (qry->exec(this->dbs)){
+                QDateTime currentDateTime = QDateTime::currentDateTime();
+                int count = item->childCount();
+                item->setText(0,newdate.toString("dd/MM/yyyy"));
+                for (int i = 0; i < count; i++){
+                    addEventDB(currentDateTime, "Edited: " + item->child(i)->text(0)
+                               + " $ " + item->child(i)->text(1)
+                               + " $ " + date.toString("dd/MM/yyyy")
+                               + " -> " + newdate.toString("dd/MM/yyyy"));
+                    log->addEvent(currentDateTime.toString("yyyy-MM-dd hh:mm:ss") +
+                                  " | Edited: " + item->child(i)->text(0) +
+                                  " $ " + item->child(i)->text(1) +
+                                  " $ " + date.toString("dd/MM/yyyy") +
+                                  " -> " + newdate.toString("dd/MM/yyyy"));
+                }
+            }
+            else {
+                qDebug() << "Error in edit date";
+            }
         }
     }
 }

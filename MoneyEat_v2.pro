@@ -13,8 +13,14 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    log.cpp \
+    editdate.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    log.h \
+    editdate.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    log.ui \
+    editdate.ui

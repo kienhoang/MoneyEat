@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QMessageBox>
 #include <QTreeWidget>
+#include <log.h>
 
 namespace Ui {
 class MainWindow;
@@ -25,7 +26,7 @@ public:
     QString generateID();   // Generate ID for insert money
     bool addMoneyDB(const QString & item, int money,const QDate & date, const QString & id); // Add money to Database
     bool delItemMoneyDB(const QString & id); // Delete a Item from Database
-    bool addEventDB(const QString & event);  // Add a event to Database
+    bool addEventDB(const QDateTime & datetime, const QString & event);  // Add a event to Database
     bool addUser(const QString  & username, const QString & description); // Add a user
     bool removeUser(const QString & username);  // Remove a user
     void loadUserList();
@@ -38,12 +39,16 @@ public:
     QTreeWidgetItem * addItemMoneyTree(const QString &item, int money, const QDate & date, const QString & id);
     void loadMoneyTree();
     void updateMoneyTree(QTreeWidgetItem * item = 0);
-public slots:
-    void onCalendarChange();
-private slots:
-    void on_btnAdd_clicked();
+    void loadEventToLog();
 
+private slots:
+    void onCalendarChange();
+    void on_btnAdd_clicked();
     void on_btnDelete_clicked();
+    void on_btnLoadUser_clicked();
+    void on_btnSort_clicked();
+    void on_btnLog_clicked();
+    void on_btnEdit_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -57,6 +62,8 @@ private:
     QSqlQuery * qry; // Database Query
     QString dbf;   // Database file
     QString dbs;   // Query String
+    /* Log Window */
+    Log * log;
 
 };
 
