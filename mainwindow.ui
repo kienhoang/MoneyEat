@@ -224,8 +224,45 @@
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuDatabase">
+    <property name="title">
+     <string>Option</string>
+    </property>
+    <addaction name="actionNew_Database"/>
+    <addaction name="actionConnect_Database_2"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuUser">
+    <property name="title">
+     <string>User</string>
+    </property>
+    <addaction name="actionAdd_User"/>
+   </widget>
+   <addaction name="menuDatabase"/>
+   <addaction name="menuUser"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionNew_Database">
+   <property name="text">
+    <string>New Database</string>
+   </property>
+  </action>
+  <action name="actionConnect_Database_2">
+   <property name="text">
+    <string>Connect Database</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionAdd_User">
+   <property name="text">
+    <string>Add User</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>

@@ -15,12 +15,18 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     log.cpp \
-    editdate.cpp
+    editdate.cpp \
+    edititem.cpp \
+    calcdlg.cpp
 
 HEADERS  += mainwindow.h \
     log.h \
-    editdate.h
+    editdate.h \
+    edititem.h \
+    calcdlg.h
 
 FORMS    += mainwindow.ui \
     log.ui \
-    editdate.ui
+    editdate.ui \
+    edititem.ui \
+    calcdlg.ui

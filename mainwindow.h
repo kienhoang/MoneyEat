@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QTreeWidget>
 #include <log.h>
+#include <QFileDialog>
 
 namespace Ui {
 class MainWindow;
@@ -30,7 +31,7 @@ public:
     bool addUser(const QString  & username, const QString & description); // Add a user
     bool removeUser(const QString & username);  // Remove a user
     void loadUserList();
-
+    void changeDB(const QString & dbf);
     /* For Widgets */
     void loadInfo();
     void reloadUser();
@@ -49,6 +50,14 @@ private slots:
     void on_btnSort_clicked();
     void on_btnLog_clicked();
     void on_btnEdit_clicked();
+
+    void on_btnCalc_clicked();
+
+    void on_actionExit_triggered();
+
+    void on_actionNew_Database_triggered();
+
+    void on_actionConnect_Database_2_triggered();
 
 private:
     Ui::MainWindow *ui;

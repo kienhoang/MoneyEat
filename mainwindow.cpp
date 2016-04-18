@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include"editdate.h"
+#include "editdate.h"
+#include "edititem.h"
+#include "calcdlg.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -19,6 +21,7 @@ MainWindow::~MainWindow(){
     closeDB();
     delete log;
     delete ui;
+    qDebug() << "Exit Successfully";
 }
 
 /* Connect Database */
@@ -67,6 +70,15 @@ bool MainWindow::connectDB(){
 void MainWindow::closeDB(){
     this->db.close();
     this->db.removeDatabase(QSqlDatabase::defaultConnection);
+}
+
+void MainWindow::changeDB(const QString & dbf){
+    closeDB();
+    this->dbf = dbf;
+    connectDB();
+    initWidget();
+    loadMoneyTree();
+    loadEventToLog();
 }
 
 /* Generate ID for add money*/
@@ -175,6 +187,7 @@ void MainWindow::loadUserList(){
 /* Load user list to widget */
 void MainWindow::reloadUser(){
     loadUserList();
+    ui->cmUser->clear();
     ui->cmUser->addItems(this->usrList);
 }
 
@@ -387,7 +400,39 @@ void MainWindow::on_btnLog_clicked(){
 void MainWindow::on_btnEdit_clicked(){
     QTreeWidgetItem * item = ui->moneytree->currentItem();
     if (item->parent()){
-
+        QString id = item->text(2);
+        QString itemname = item->text(0);
+        int money = item->text(1).toInt();
+        EditItem edititem(this);
+        edititem.setValue(itemname,money);
+        edititem.exec();
+        if (edititem.Change()){
+            QString newName = edititem.getItemName();
+            int newMoney = edititem.getMoney();
+            this->dbs = "UPDATE " + this->usr + "_money SET item = '" + newName
+                    + "', money = " + QString::number(newMoney)
+                    + " WHERE id = '"  + id + "';";
+            if (qry->exec(this->dbs)){
+                QDateTime currentDateTime = QDateTime::currentDateTime();
+                item->setText(0,newName);
+                item->setText(1,QString::number(newMoney));
+                addEventDB(currentDateTime, "Edited: " + itemname
+                           + " $ " + QString::number(money)
+                           + " $ " + item->parent()->text(0)
+                           + " -> " + newName
+                           + " $ " + QString::number(newMoney));
+                log->addEvent(currentDateTime.toString("yyyy-MM-dd hh:mm:ss")
+                            + " | Edited: " + itemname
+                            + " $ " + QString::number(money)
+                            + " $ " + item->parent()->text(0)
+                            + " -> " + newName
+                            + " $ " + QString::number(newMoney));
+            }
+            else {
+                qDebug() << "Error in Edit Item";
+                QMessageBox::critical(this,"ERROR","Error in edit Item");
+            }
+        }
     }
     else {
         QDate date = QDate::fromString(ui->moneytree->currentItem()->text(0),"dd/MM/yyyy");
@@ -417,7 +462,47 @@ void MainWindow::on_btnEdit_clicked(){
             }
             else {
                 qDebug() << "Error in edit date";
+                QMessageBox::critical(this,"ERROR","Error in edit date");
             }
         }
+    }
+}
+
+void MainWindow::on_btnCalc_clicked(){
+    int money = 0;
+    int count = ui->moneytree->topLevelItemCount();
+    for (int i = 0; i < count; i++){
+        money = money + ui->moneytree->topLevelItem(i)->text(1).toInt();
+    }
+    CalcDlg calc(this);
+    calc.setValue(money);
+    calc.exec();
+}
+
+void MainWindow::on_actionExit_triggered(){
+    qApp->exit(0);
+}
+
+void MainWindow::on_actionNew_Database_triggered(){
+    QString path = QFileDialog::getSaveFileName(this,"New database",".","Database (*.db);;All file (*.*)");
+    if(path != ""){
+        this->dbf = path;
+        closeDB();
+        connectDB();
+        initWidget();
+        loadMoneyTree();
+        loadEventToLog();
+    }
+}
+
+void MainWindow::on_actionConnect_Database_2_triggered(){
+    QString path = QFileDialog::getOpenFileName(this,"Connect database",".","Database (*.db);;All file (*.*)");
+    if(path != ""){
+        this->dbf = path;
+        closeDB();
+        connectDB();
+        initWidget();
+        loadMoneyTree();
+        loadEventToLog();
     }
 }
